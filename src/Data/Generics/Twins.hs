@@ -16,6 +16,8 @@
 --
 -----------------------------------------------------------------------------
 
+{-# OPTIONS_GHC -Wno-unrecognised-warning-flags -Wno-x-partial #-}
+
 module Data.Generics.Twins (
 
         -- * Generic folds and maps that also accumulate

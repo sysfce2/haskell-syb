@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
+{-# OPTIONS_GHC -Wno-unrecognised-warning-flags -Wno-x-partial #-}
+
 module GenUpTo (tests) where
 
 {-
