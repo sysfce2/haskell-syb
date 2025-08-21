@@ -218,12 +218,15 @@ newtype Qr r a = Qr { unQr  :: r -> r }
 -- | Twin map for transformation
 --
 -- @since 0.1.0.0
-gzipWithT :: GenericQ (GenericT) -> GenericQ (GenericT)
+gzipWithT :: GenericQ GenericT -> GenericQ GenericT
 gzipWithT f x y = case gmapAccumT perkid funs y of
                     ([], c) -> c
                     _       -> error "gzipWithT"
  where
+  perkid :: Data b => [GenericT'] -> b -> ([GenericT'], b)
   perkid a d = (tail a, unGT (head a) d)
+
+  funs :: [GenericT']
   funs = gmapQ (\k -> GT (f k)) x
 
 
@@ -243,12 +246,14 @@ gzipWithM f x y = case gmapAccumM perkid funs y of
 -- | Twin map for queries
 --
 -- @since 0.1.0.0
-gzipWithQ :: GenericQ (GenericQ r) -> GenericQ (GenericQ [r])
+gzipWithQ :: forall r. GenericQ (GenericQ r) -> GenericQ (GenericQ [r])
 gzipWithQ f x y = case gmapAccumQ perkid funs y of
                    ([], r) -> r
                    _       -> error "gzipWithQ"
  where
+  perkid :: Data c => [GenericQ' b] -> c -> ([GenericQ' b], b)
   perkid a d = (tail a, unGQ (head a) d)
+  funs :: [GenericQ' r]
   funs = gmapQ (\k -> GQ (f k)) x
 
 
