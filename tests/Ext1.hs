@@ -14,21 +14,11 @@ import Test.Tasty.HUnit
 
 import Data.Generics
 import GHC.Exts (unsafeCoerce#)
-#if MIN_VERSION_base(4,8,0)
-import GHC.Base hiding(foldr)
-#else
-import GHC.Base
-#endif
+import GHC.Base hiding (foldr)
 
 -- Unsafe coerce
 unsafeCoerce :: a -> b
 unsafeCoerce = unsafeCoerce#
-
-
--- Handy type constructors
-newtype ID x = ID { unID :: x }
-newtype CONST c a = CONST { unCONST :: c }
-
 
 -- Extension of a query with a para. poly. list case
 extListQ' :: Data d
@@ -44,7 +34,11 @@ extListQ' def ext d =
 -- Test extListQ'
 foo1 :: Data d => d -> Int
 foo1 = const 0 `extListQ'` length
+
+t1 :: Int
 t1 = foo1 True -- should count as 0
+
+t2 :: Int
 t2 = foo1 [True,True] -- should count as 2
 
 
@@ -66,7 +60,10 @@ foo2 = const 0 `ext1Q` list
   list :: Data a => [a] -> Int
   list l = foldr (+) 0 $ map glength l
 
+t3 :: Int
 t3 = foo2 (True,True) -- should count as 0
+
+t4 :: Int
 t4 = foo2 [(True,True),(True,True)] -- should count as 2+2=4
 
 
@@ -76,7 +73,10 @@ foo3 x = if isList x
           then foldr (+) 0 $ gmapListQ glength x
           else 0
 
+t5 :: Int
 t5 = foo3 (True,True) -- should count as 0
+
+t6 :: Int
 t6 = foo3 [(True,True),(True,True)] -- should count as 2+2=4
 
 
@@ -107,18 +107,8 @@ gmapListQ f x =
                   then ( gmapQi 0 f x : gmapQi 1 (gmapListQ f) x )
                   else error "gmapListQ"
 
-
--- Build nil
-mkNil :: Data a => a
-mkNil = fromConstr $ toConstr ([]::[()])
-
-
--- Build cons
-mkCons :: Data a => a
-mkCons = fromConstr $ toConstr ((undefined:undefined)::[()])
-
-
 -- Main function for testing
+tests :: Assertion
 tests = ( t1
         , ( t2
         , ( t3
@@ -127,4 +117,5 @@ tests = ( t1
         , ( t6
         )))))) @=? output
 
+output :: (Int, (Int, (Int, (Int, (Int, Int)))))
 output = (0,(2,(0,(4,(0,4)))))

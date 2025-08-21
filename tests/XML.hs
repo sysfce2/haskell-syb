@@ -14,23 +14,22 @@ Haskell data as homogeneous tree structures
 
 import Test.Tasty.HUnit
 
-import Control.Applicative (Alternative(..), Applicative(..))
+import Control.Applicative (Alternative(..))
 import Control.Monad
-import Data.Maybe
 import Data.Generics
 import CompanyDatatypes
 
 
 -- HaXml-like types for XML elements
 data Element   = Elem Name [Attribute] [Content]
-                 deriving (Show, Eq, Typeable, Data)
+                 deriving (Show, Eq, Data)
 
 data Content   = CElem Element
                | CString Bool CharData
                         -- ^ bool is whether whitespace is significant
                | CRef Reference
                | CMisc Misc
-                 deriving (Show, Eq, Typeable, Data)
+                 deriving (Show, Eq, Data)
 
 type CharData = String
 
@@ -84,7 +83,7 @@ content2data = result
   -- Determine type of data to be constructed
   myType = myTypeOf result
     where
-      myTypeOf :: forall a. ReadX a -> a
+      myTypeOf :: forall b. ReadX b -> b
       myTypeOf =  undefined
 
   -- Handle an element
@@ -98,7 +97,7 @@ content2data = result
 
 
   -- A special case for lists
-  list :: forall a. Data a => ReadX [a]
+  list :: forall b. Data b => ReadX [b]
   list =          ( do h <- content2data
                        t <- list
                        return (h:t) )
@@ -148,15 +147,16 @@ newtype ReadX a =
                         -> Maybe ([Content], a) }
 
 -- Run a computation
+runReadX :: ReadX a -> [Content] -> Maybe a
 runReadX x y = case unReadX x y of
-                 Just ([],y) -> Just y
+                 Just ([],z) -> Just z
                  _           -> Nothing
 
 -- Read one content particle
 readX :: ReadX Content
-readX =  ReadX (\x -> if null x
-                        then Nothing
-                        else Just (tail x, head x)
+readX =  ReadX (\x -> case x of
+                        [] -> Nothing
+                        y : ys -> Just (ys, y)
                )
 
 instance Functor ReadX where
@@ -194,6 +194,7 @@ instance MonadPlus ReadX where
 --
 -----------------------------------------------------------------------------
 
+tests :: Assertion
 tests = (   genCom
         , ( data2content genCom
         , ( zigzag person1 :: Maybe Person
@@ -205,4 +206,5 @@ tests = (   genCom
   zigzag :: Data a => a -> Maybe a
   zigzag = runReadX content2data . data2content
 
+output :: (Company, ([Content], (Maybe Person, (Maybe Company, Bool))))
 output = (C [D "Research" (E (P "Laemmel" "Amsterdam") (S 8000.0)) [PU (E (P "Joost" "Amsterdam") (S 1000.0)),PU (E (P "Marlow" "Cambridge") (S 2000.0))],D "Strategy" (E (P "Blair" "London") (S 100000.0)) []],([CElem (Elem "Company" [] [CElem (Elem "Dept" [] [CString True "Research",CElem (Elem "Employee" [] [CElem (Elem "Person" [] [CString True "Laemmel",CString True "Amsterdam"]),CElem (Elem "Salary" [] [CString True "8000.0"])]),CElem (Elem "Unit" [] [CElem (Elem "Employee" [] [CElem (Elem "Person" [] [CString True "Joost",CString True "Amsterdam"]),CElem (Elem "Salary" [] [CString True "1000.0"])])]),CElem (Elem "Unit" [] [CElem (Elem "Employee" [] [CElem (Elem "Person" [] [CString True "Marlow",CString True "Cambridge"]),CElem (Elem "Salary" [] [CString True "2000.0"])])])]),CElem (Elem "Dept" [] [CString True "Strategy",CElem (Elem "Employee" [] [CElem (Elem "Person" [] [CString True "Blair",CString True "London"]),CElem (Elem "Salary" [] [CString True "100000.0"])])])])],(Just (P "Lazy" "Home"),(Just (C [D "Research" (E (P "Laemmel" "Amsterdam") (S 8000.0)) [PU (E (P "Joost" "Amsterdam") (S 1000.0)),PU (E (P "Marlow" "Cambridge") (S 2000.0))],D "Strategy" (E (P "Blair" "London") (S 100000.0)) []]),True))))

@@ -13,7 +13,7 @@ Disclaimer: this is a perhaps naive, certainly undebugged example.
 
 import Test.Tasty.HUnit
 
-import Control.Applicative (Alternative(..), Applicative(..))
+import Control.Applicative (Alternative(..))
 import Control.Monad
 import Data.Generics
 
@@ -21,9 +21,9 @@ import Data.Generics
 -- We want to read terms of type T3 regardless of the order T1 and T2.
 ---------------------------------------------------------------------------
 
-data T1 = T1       deriving (Show, Eq, Typeable, Data)
-data T2 = T2       deriving (Show, Eq, Typeable, Data)
-data T3 = T3 T1 T2 deriving (Show, Eq, Typeable, Data)
+data T1 = T1       deriving (Show, Eq, Data)
+data T2 = T2       deriving (Show, Eq, Data)
+data T3 = T3 T1 T2 deriving (Show, Eq, Data)
 
 
 ---------------------------------------------------------------------------
@@ -36,15 +36,16 @@ newtype ReadT a = ReadT { unReadT :: [String] -> Maybe ([String],a) }
 
 
 -- Run a computation
+runReadT :: ReadT a -> [String] -> Maybe a
 runReadT x y = case unReadT x y of
-                 Just ([],y) -> Just y
+                 Just ([],z) -> Just z
                  _           -> Nothing
 
 -- Read one string
 readT :: ReadT String
-readT =  ReadT (\x -> if null x
-                        then Nothing
-                        else Just (tail x, head x)
+readT =  ReadT (\x -> case x of
+                        []     -> Nothing
+                        y : ys -> Just (ys, y)
                )
 
 instance Functor ReadT where
@@ -99,7 +100,7 @@ buildT = result
   -- Determine type of data to be constructed
   myType = myTypeOf result
     where
-      myTypeOf :: forall a. ReadT a -> a
+      myTypeOf :: forall b. ReadT b -> b
       myTypeOf =  undefined
 
   -- Turn string into constructor
@@ -108,11 +109,11 @@ buildT = result
                             (readConstr (dataTypeOf myType) str)
 
   -- Specialise buildT per kid type
-  buildT' :: forall a. Data a => a -> GenM
-  buildT' (_::a) = GenM (const mzero `extM` const (buildT::ReadT a))
+  buildT' :: forall b. Data b => b -> GenM
+  buildT' (_::b) = GenM (const mzero `extM` const (buildT::ReadT b))
 
   -- The permutation exploration function
-  perm :: forall a. Data a => [GenM] -> [GenM] -> a -> ReadT a
+  perm :: forall b. Data b => [GenM] -> [GenM] -> b -> ReadT b
   perm [] [] a = return a
   perm fs [] a = perm [] fs a
   perm fs (f:fs') a = (
@@ -130,6 +131,7 @@ buildT = result
 -- The main function for testing
 ---------------------------------------------------------------------------
 
+tests :: Assertion
 tests =
      ( runReadT buildT ["T1"] :: Maybe T1           -- should parse fine
    , ( runReadT buildT ["T2"] :: Maybe T2           -- should parse fine
@@ -138,4 +140,5 @@ tests =
    , ( runReadT buildT ["T3","T2","T2"] :: Maybe T3 -- should fail
    ))))) @=? output
 
+output :: (Maybe T1, (Maybe T2, (Maybe T3, (Maybe T3, Maybe a))))
 output = (Just T1,(Just T2,(Just (T3 T1 T2),(Just (T3 T1 T2),Nothing))))

@@ -25,27 +25,27 @@ types, no tuples, ...
 -}
 
 data Prog = Prog Dec Stat
-            deriving (Show, Eq, Typeable, Data)
+            deriving (Show, Eq, Data)
 
 data Dec  = Nodec
           | Ondec Id Type
           | Manydecs Dec Dec
-            deriving (Show, Eq, Typeable, Data)
+            deriving (Show, Eq, Data)
 
 data Id = A | B
-          deriving (Show, Eq, Typeable, Data)
+          deriving (Show, Eq, Data)
 
 data Type = Int | Bool
-            deriving (Show, Eq, Typeable, Data)
+            deriving (Show, Eq, Data)
 
 data Stat = Noop
           | Assign Id Exp
           | Seq Stat Stat
-            deriving (Show, Eq, Typeable, Data)
+            deriving (Show, Eq, Data)
 
 data Exp = Zero
          | Succ Exp
-           deriving (Show, Eq, Typeable, Data)
+           deriving (Show, Eq, Data)
 
 
 -- Generate all terms of a given depth
@@ -70,20 +70,22 @@ genUpTo d = result
      --
      cons' :: [Constr]
      cons' = case dataTypeRep ty of
-              AlgRep cons -> cons
-              IntRep      -> [mkIntegralConstr ty 0]
-              FloatRep    -> [mkIntegralConstr ty 0]
-              CharRep     -> [mkCharConstr ty 'x']
+              AlgRep cons'' -> cons''
+              IntRep        -> [mkIntegralConstr ty 0]
+              FloatRep      -> [mkIntegralConstr ty 0]
+              CharRep       -> [mkCharConstr ty 'x']
+              NoRep         -> []
       where
         ty = dataTypeOf (head result)
 
 
 -- For silly tests
-data T0 = T0 T1 T2 T3 deriving (Show, Eq, Typeable, Data)
-data T1 = T1a | T1b   deriving (Show, Eq, Typeable, Data)
-data T2 = T2a | T2b   deriving (Show, Eq, Typeable, Data)
-data T3 = T3a | T3b   deriving (Show, Eq, Typeable, Data)
+data T0 = T0 T1 T2 T3 deriving (Show, Eq, Data)
+data T1 = T1a | T1b   deriving (Show, Eq, Data)
+data T2 = T2a | T2b   deriving (Show, Eq, Data)
+data T3 = T3a | T3b   deriving (Show, Eq, Data)
 
+tests :: Assertion
 tests = (   genUpTo 0 :: [Id]
         , ( genUpTo 1 :: [Id]
         , ( genUpTo 2 :: [Id]
@@ -91,4 +93,5 @@ tests = (   genUpTo 0 :: [Id]
         , ( genUpTo 3 :: [Prog]
         ))))) @=? output
 
+output :: ([a], ([Id], ([Id], ([T0], [Prog]))))
 output = ([],([A,B],([A,B],([T0 T1a T2a T3a,T0 T1a T2a T3b,T0 T1a T2b T3a,T0 T1a T2b T3b,T0 T1b T2a T3a,T0 T1b T2a T3b,T0 T1b T2b T3a,T0 T1b T2b T3b],[Prog Nodec Noop,Prog Nodec (Assign A Zero),Prog Nodec (Assign B Zero),Prog Nodec (Seq Noop Noop),Prog (Ondec A Int) Noop,Prog (Ondec A Int) (Assign A Zero),Prog (Ondec A Int) (Assign B Zero),Prog (Ondec A Int) (Seq Noop Noop),Prog (Ondec A Bool) Noop,Prog (Ondec A Bool) (Assign A Zero),Prog (Ondec A Bool) (Assign B Zero),Prog (Ondec A Bool) (Seq Noop Noop),Prog (Ondec B Int) Noop,Prog (Ondec B Int) (Assign A Zero),Prog (Ondec B Int) (Assign B Zero),Prog (Ondec B Int) (Seq Noop Noop),Prog (Ondec B Bool) Noop,Prog (Ondec B Bool) (Assign A Zero),Prog (Ondec B Bool) (Assign B Zero),Prog (Ondec B Bool) (Seq Noop Noop),Prog (Manydecs Nodec Nodec) Noop,Prog (Manydecs Nodec Nodec) (Assign A Zero),Prog (Manydecs Nodec Nodec) (Assign B Zero),Prog (Manydecs Nodec Nodec) (Seq Noop Noop)]))))
