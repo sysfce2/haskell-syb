@@ -51,8 +51,10 @@ module Data.Generics.Aliases (
         GenericM'(..),
         -- ** Readers
         GenericR,
+        GenericR'(..),
         -- ** Builders
         GenericB,
+        GenericB'(..),
         -- ** Other
         Generic,
         Generic'(..),
@@ -486,6 +488,12 @@ newtype GenericM' m = GM { unGM :: GenericM m }
 -- @since 0.1.0.0
 type GenericB = forall a. Data a => a
 
+-- | The type synonym `GenericB` has a polymorphic type, and can therefore not
+--   appear in places where monomorphic types are expected, for example in a list.
+--   The data type `GenericB'` wraps `GenericB` in a data type to lift this restriction.
+--
+-- @since 0.7.3
+newtype GenericB' = GenericB' { unGenericB' :: GenericB }
 
 -- | Generic readers, say monadic builders,
 --   i.e., produce an \"a\" with the help of a monad \"m\".
@@ -493,6 +501,12 @@ type GenericB = forall a. Data a => a
 -- @since 0.1.0.0
 type GenericR m = forall a. Data a => m a
 
+-- | The type synonym `GenericR` has a polymorphic type, and can therefore not
+--   appear in places where monomorphic types are expected, for example in a list.
+--   The data type `GenericR'` wraps `GenericR` in a data type to lift this restriction.
+--
+-- @since 0.7.3
+newtype GenericR' m = GenericR' { unGenericR' :: GenericR m }
 
 -- | The general scheme underlying generic functions
 --   assumed by gfoldl; there are isomorphisms such as
@@ -507,7 +521,7 @@ type Generic c = forall a. Data a => a -> c a
 --   The data type `Generic'` wraps `Generic` in a data type to lift this restriction.
 --
 -- @since 0.1.0.0
-data Generic' c = Generic' { unGeneric' :: Generic c }
+newtype Generic' c = Generic' { unGeneric' :: Generic c }
 
 ------------------------------------------------------------------------------
 --
