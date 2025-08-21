@@ -127,6 +127,7 @@ gread = readP_to_S gread'
                string "[]"     -- Compound lexeme "[]"
           <++  string "()"     -- singleton "()"
           <++  infixOp         -- Infix operator in parantheses
+          <++  negativeNumber  -- prefix "-" and number literal
           <++  hsLex           -- Ordinary constructors and literals
 
     -- Handle infix operators such as (:)
@@ -135,3 +136,9 @@ gread = readP_to_S gread'
                  str <- munch1 (not . (==) ')')
                  c2  <- char ')'
                  return $ [c1] ++ str ++ [c2]
+
+    -- Handle negative number literals
+    negativeNumber :: ReadP String
+    negativeNumber = do c1 <- char '-'
+                        str <- hsLex
+                        return $ c1 : str
