@@ -47,16 +47,13 @@ module Data.Generics.Twins (
 #ifdef __HADDOCK__
 import Prelude
 #endif
+import Control.Applicative (Const(..))
 import Data.Data
 import Data.Generics.Aliases
+import Data.Functor.Identity (Identity(..))
 
 #ifdef __GLASGOW_HASKELL__
 import Prelude hiding ( GT )
-#endif
-
-#if __GLASGOW_HASKELL__ < 709
-import Control.Applicative (Applicative(..))
-import Data.Monoid         ( mappend, mconcat )
 #endif
 
 ------------------------------------------------------------------------------
@@ -108,11 +105,12 @@ gmapAccumT :: Data d
            => (forall e. Data e => a -> e -> (a,e))
            -> a -> d -> (a, d)
 gmapAccumT f a0 d0 = let (a1, d1) = gfoldlAccum k z a0 d0
-                     in (a1, unID d1)
+                     in (a1, runIdentity d1)
  where
-  k a (ID c) d = let (a',d') = f a d
-                  in (a', ID (c d'))
-  z a x = (a, ID x)
+  k a (Identity c) d =
+    let (a',d') = f a d
+    in (a', Identity (c d'))
+  z a x = (a, Identity x)
 
 
 -- | Applicative version
@@ -155,11 +153,12 @@ gmapAccumQl :: Data d
             -> (forall e. Data e => a -> e -> (a,r'))
             -> a -> d -> (a, r)
 gmapAccumQl o r0 f a0 d0 = let (a1, r1) = gfoldlAccum k z a0 d0
-                           in (a1, unCONST r1)
+                           in (a1, getConst r1)
  where
-  k a (CONST c) d = let (a', r) = f a d
-                     in (a', CONST (c `o` r))
-  z a _ = (a, CONST r0)
+  k a (Const c) d =
+    let (a', r) = f a d
+    in (a', Const (c `o` r))
+  z a _ = (a, Const r0)
 
 
 -- | gmapQr with accumulation
@@ -193,14 +192,6 @@ gmapAccumQ f = gmapAccumQr (:) [] f
 --      Helper type constructors
 --
 ------------------------------------------------------------------------------
-
-
--- | The identity type constructor needed for the definition of gmapAccumT
-newtype ID x = ID { unID :: x }
-
-
--- | The constant type constructor needed for the definition of gmapAccumQl
-newtype CONST c a = CONST { unCONST :: c }
 
 
 -- | The type constructor needed for the definition of gmapAccumQr
