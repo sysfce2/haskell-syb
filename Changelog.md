@@ -1,3 +1,9 @@
+# 0.7.3
+
+- Fix `gread` to recognize negative numbers (https://github.com/dreixel/syb/issues/13)
+- Bump minimum required GHC to 8.0
+- `Generic'` is now a newtype instead of data, add `GenericR'` and `GenericB'` (https://github.com/dreixel/syb/issues/49)
+
 # 0.7.2.4
 - Improved documentation (thanks to @BinderDavid)
 - Export `ext2` function which was already defined but not exported
