@@ -16,30 +16,42 @@ import Test.Tasty.HUnit
 
 import Data.Generics
 
-str1 = "(True)"     -- reads fine as a Bool
-str2 = "(Treu)"     -- invalid constructor
-str3 = "True"       -- lacks parentheses
-str4 = "(1)"        -- could be an Int
-str5 = "( 2 ) ..."  -- could be an Int with some trailing left-over
-str6 = "([])"       -- test empty list
-str7 = "((:)" ++ " " ++ str4 ++ " " ++ str6 ++ ")"
+str1, str2, str3, str4, str4a, str5, str6, str7 :: String
+str1  = "(True)"     -- reads fine as a Bool
+str2  = "(Treu)"     -- invalid constructor
+str3  = "True"       -- lacks parentheses
+str4  = "(1)"        -- could be an Int
+str4a = "(-1)"       -- negative literal
+str5  = "( 2 ) ..."  -- could be an Int with some trailing left-over
+str6  = "([])"       -- test empty list
+str7  = "((:)" ++ " " ++ str4 ++ " " ++ str6 ++ ")"
 
-tests = show ( ( [ gread str1,
-                   gread str2,
-                   gread str3
-                 ]
-               , [ gread str4,
-                   gread str5
-                 ]
-               , [ gread str6,
-                   gread str7
-                 ]
-               )
-             :: ( [[(Bool,  String)]]
-                , [[(Int,   String)]]
-                , [[([Int], String)]]
-                )
-             ) @=? output
+expected ::
+  ( [[(Bool,  String)]]
+  , [[(Int,   String)]]
+  , [[([Int], String)]]
+  )
+expected =
+  ( [ gread str1,
+      gread str2,
+      gread str3
+    ]
+  , [ gread str4,
+      gread str4a,
+      gread str5
+    ]
+  , [ gread str6,
+      gread str7
+    ]
+  )
 
-output = show
-           ([[(True,"")],[],[]],[[(1,"")],[(2,"...")]],[[([],"")],[([1],"")]])
+tests :: Assertion
+tests = show expected @=? show output
+
+output ::
+  ( [[(Bool,  String)]]
+  , [[(Int,   String)]]
+  , [[([Int], String)]]
+  )
+output =
+  ([[(True,"")],[],[]],[[(1,"")],[(-1,"")],[(2,"...")]],[[([],"")],[([1],"")]])
